@@ -1,0 +1,435 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  moduleFormat = "cjs"
+
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+
+// 1. THE TENANT (The Event Company Owner)
+model Tenant {
+  id             String   @id @default(cuid())
+  companyName    String @unique
+  isVatRegistered Boolean  @default(false)
+  vatPercentage  Float  @default(16.0) // Default for East Africa
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+
+  assets          Asset[]
+  clients         Client[]
+  quotes          Quote[]
+  purchaseOrders  PurchaseOrder[]
+  categories      Category[]
+  businessConfigs BusinessConfig[]
+  events          Event[]
+  serviceBuckets  ServiceBucket[]
+  Users           User[]
+}
+
+
+
+
+
+// 1. ASSET CATEGORIES (e.g., Furniture, Decor, Tents, Lighting)
+model Category {
+  id        String   @id @default(cuid())
+  name      String   // e.g., "Tents"
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  // Optional parent for sub-categories (e.g. "Gold Chairs" under "Chairs")
+  parentId      String?
+  parent        Category?   @relation("CategoryTree", fields: [parentId], references: [id])
+  subCategories Category[]  @relation("CategoryTree")
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  assets    Asset[]
+
+  // Single optional image for a category (e.g. a banner/icon)
+  imageUrl      String?
+  imagePublicId String?   // Cloudinary public_id — stored for deletion
+
+  @@unique([name, tenantId]) // name must be unique per tenant regardless of nesting depth
+}
+
+// 2. UPDATED ASSET MODEL
+model Asset {
+  id             String   @id @default(cuid())
+  name           String
+  sku            String?  // Optional: Unique Stock Keeping Unit
+  
+  // Category Link
+  categoryId     String
+  category       Category @relation(fields: [categoryId], references: [id])
+
+  // DYNAMIC METADATA (The "Magic" Field)
+  // This stores objects like { color: "Gold", material: "Silk", size: "10x10" }
+  metadata       Json?    @default("{}")
+
+  totalStock     Int      // Total physical units in the company   
+  baseRentalRate Int      
+  
+
+  
+  // Virtual buckets (calculated or stored)
+  unitsInRepair  Int      @default(0)
+  unitsOnSite    Int      @default(0)
+  unitsAvailable Int      @default(0) // This is the number the Quote looks at
+
+
+
+  
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  quoteItems     QuoteItem[]
+  stockMovements StockMovement[]
+
+  // Multiple images stored in a separate table
+  images         AssetImage[]
+}
+
+// Images for an asset (one asset can have many images)
+model AssetImage {
+  id        String   @id @default(cuid())
+  assetId   String
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  imageUrl  String   // Cloudinary secure_url for display
+  publicId  String   // Cloudinary public_id — stored for deletion
+  createdAt DateTime @default(now())
+}
+
+// THE MOVEMENT TRACKER
+enum MovementType {
+  DISPATCH    // Sent to event
+  RETURN      // Back from event
+  REPAIR_IN   // Sent to workshop
+  REPAIR_OUT  // Back from workshop (Available again)
+  LOSS        // Item lost or destroyed
+}
+
+
+model StockMovement {
+  id          String       @id @default(cuid())
+  assetId     String
+  asset       Asset        @relation(fields: [assetId], references: [id])
+
+  type        MovementType
+  quantity    Int
+
+  eventId     String?      // Link to the event if it's a dispatch/return
+  event       Event?       @relation(fields: [eventId], references: [id])
+
+  notes       String?      // e.g. "Leg broken during Google Gala"
+  createdAt   DateTime     @default(now())
+  userId      String       // Who logged the movement
+  updatedAt   DateTime     @updatedAt
+
+  images      StockMovementImage[]
+}
+
+// Condition photos attached to a stock movement (e.g. damage photos for REPAIR_IN)
+model StockMovementImage {
+  id              String        @id @default(cuid())
+  stockMovementId String
+  stockMovement   StockMovement @relation(fields: [stockMovementId], references: [id], onDelete: Cascade)
+  imageUrl        String        // Cloudinary secure_url for display
+  publicId        String        // Cloudinary public_id — stored for deletion
+  createdAt       DateTime      @default(now())
+}
+// 4. CLIENTS (Corporate vs Non-Corporate)
+model Client {
+  id            String   @id @default(cuid())
+  name          String
+  isCorporate   Boolean  @default(false)
+  email         String?
+  phone         String?
+  address       String?  @db.Text
+  contactPerson String?  // Primary contact for corporate clients
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  quotes        Quote[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// 5. THE QUOTATION ENGINE (Header)
+enum QuoteStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  INVOICED
+  CANCELLED
+}
+
+model Quote {
+  id             String      @id @default(cuid())
+  quoteNumber    String      @unique // e.g., QT-1001
+  status         QuoteStatus @default(DRAFT)
+  includeVat     Boolean     @default(false)
+  globalDiscount Decimal     @default(0.0)
+
+  // Event date range — used for rental availability conflict detection
+  eventStartDate DateTime?
+  eventEndDate   DateTime?
+  notes          String?     @db.Text
+
+  // Approval tracking
+  approvedAt     DateTime?
+  approvedBy     String?     // userId of the admin who approved
+
+  tenantId       String
+  tenant         Tenant      @relation(fields: [tenantId], references: [id])
+  clientId       String
+  client         Client      @relation(fields: [clientId], references: [id])
+
+  items          QuoteItem[]
+  events         Event[]
+  serviceBucket  ServiceBucket?
+  paymentProofs  QuotePaymentProof[]
+}
+
+// Payment proof images attached to a quote (M-Pesa receipts, bank slips, etc.)
+model QuotePaymentProof {
+  id        String   @id @default(cuid())
+  quoteId   String
+  quote     Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  imageUrl  String   // Cloudinary secure_url for display
+  publicId  String   // Cloudinary public_id — stored for deletion
+  createdAt DateTime @default(now())
+}
+// 1. GLOBAL SETTINGS
+model BusinessConfig {
+  id            String  @id @default(cuid())
+  tenantId      String  @unique
+  tenant        Tenant  @relation(fields: [tenantId], references: [id])
+  defaultVat    Decimal @default(16.0)
+  currency      String  @default("KES")
+  termsAndConditions String? @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// Event lifecycle status
+enum EventStatus {
+  UPCOMING    // Confirmed, assets reserved
+  ACTIVE      // Currently running
+  COMPLETED   // Over, assets returned
+  CANCELLED
+}
+
+// 2. THE EVENT (The "Main Bucket")
+model Event {
+  id          String      @id @default(cuid())
+  name        String      // e.g. "Safari Rally Corporate Gala"
+  venue       String?
+  startDate   DateTime
+  endDate     DateTime
+  status      EventStatus @default(UPCOMING)
+  tenantId    String
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  quotes         Quote[]
+  pos            PurchaseOrder[]
+  stockMovements StockMovement[]
+  serviceBucket  ServiceBucket?  // created on quote approval
+}
+
+// SERVICE BUCKET — captures all SERVICE-type QuoteItems on approval
+// Separates service commitments from rental asset tracking
+model ServiceBucket {
+  id        String              @id @default(cuid())
+  eventId   String              @unique
+  event     Event               @relation(fields: [eventId], references: [id])
+  quoteId   String              @unique
+  quote     Quote               @relation(fields: [quoteId], references: [id])
+  tenantId  String
+  tenant    Tenant              @relation(fields: [tenantId], references: [id])
+  items     ServiceBucketItem[]
+  createdAt DateTime            @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ServiceBucketItem {
+  id              String        @id @default(cuid())
+  serviceBucketId String
+  serviceBucket   ServiceBucket @relation(fields: [serviceBucketId], references: [id], onDelete: Cascade)
+  description     String
+  quantity        Int
+  rate            Decimal       // snapshotted from QuoteItem at approval time
+  total           Decimal       // stored computed value: quantity × rate
+  createdAt       DateTime      @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// 3. UPDATED QUOTE ITEMS (To handle Services & Discounts)
+enum ItemType {
+  RENTAL    // Quantity * Rate * Days
+  SALE      // Quantity * Rate
+  SERVICE   // Fixed Price (e.g. Transport)
+}
+
+model QuoteItem {
+  id         String   @id @default(cuid())
+  quoteId    String
+  quote      Quote    @relation(fields: [quoteId], references: [id])
+  
+  type       ItemType @default(RENTAL)
+  description String  // "Setup Fee" or "Chair Rental"
+  
+  assetId    String?  // Optional if it's a service
+  asset      Asset?   @relation(fields: [assetId], references: [id])
+
+  quantity   Int      @default(1)
+  rate       Decimal  // The base price
+  days       Int      @default(1)
+  
+  // LINE DISCOUNT
+  discountAmount Decimal @default(0.0) 
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Logic: (qty * rate * days) - discountAmount
+}
+
+// 7. PROCUREMENT (Purchase Orders)
+model PurchaseOrder {
+  id           String   @id @default(cuid())
+  poNumber     String   @unique
+  supplierName String
+  status       String   @default("PENDING") // PENDING, RECEIVED, INVOICED
+  
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+
+  events Event[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// 8. THE AUDIT WATCHDOG
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String   // e.g., "APPROVED_QUOTE"
+  details   String?  // JSON or string of what changed
+  createdAt DateTime @default(now())
+
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+}
+
+
+
+/*
+|--------------------------------------------------------------------------
+| AUTH / IDENTITY MODELS (FROM MIGRATION SQL)
+|--------------------------------------------------------------------------
+| These models match the SQL migration exactly
+*/
+
+// 2. USERS (Admin vs Staff)
+enum Role {
+  ADMIN
+  STAFF
+}
+
+
+model User {
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  emailVerified  Boolean
+  image          String?
+
+  role      Role     @default(STAFF)
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  // Populated by better-auth admin plugin on banUser / unbanUser
+  banned     Boolean?  @default(false)
+  banReason  String?
+  banExpires DateTime?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+
+
+
+  sessions       Session[]
+  accounts       Account[]
+  auditLogs AuditLog[]
+
+  @@map("user")
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], name: "session_userId_idx")
+  @@map("session")
+}
+
+model Account {
+  id                       String   @id @default(cuid())
+  accountId                String
+  providerId               String
+  accessToken              String?
+  refreshToken             String?
+  idToken                  String?
+  accessTokenExpiresAt     DateTime?
+  refreshTokenExpiresAt    DateTime?
+  scope                    String?
+  password                 String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], name: "account_userId_idx")
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@index([identifier], name: "verification_identifier_idx")
+  @@map("verification")
+}
