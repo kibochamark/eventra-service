@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from 'generated/prisma/client';
-import { fromNodeHeaders } from 'better-auth/node';
+import { fromNodeHeaders } from '../utils/from-node-headers';
 import { getAuth } from 'src/auth';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 

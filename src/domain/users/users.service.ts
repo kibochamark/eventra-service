@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Role } from 'generated/prisma/client';
-import { fromNodeHeaders } from 'better-auth/node';
+import { fromNodeHeaders } from 'src/common/utils/from-node-headers';
 import { getAuth } from 'src/auth';
 import { UserRepository } from './users.repository';
 
