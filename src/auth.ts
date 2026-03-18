@@ -1,36 +1,28 @@
-import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
-import { admin, bearer } from "better-auth/plugins";
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 
-let _auth: ReturnType<typeof betterAuth> | null = null;
+let _auth: any = null;
 
-export function getAuth() {
+export async function getAuth() {
     if (_auth) return _auth;
 
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) throw new Error("DATABASE_URL is required");
 
+    const { betterAuth }    = await import("better-auth");
+    const { prismaAdapter } = await import("better-auth/adapters/prisma");
+    const { bearer, admin } = await import("better-auth/plugins");
+
     const adapter = new PrismaNeon({ connectionString });
-    const prisma = new PrismaClient({ adapter });
+    const prisma  = new PrismaClient({ adapter });
 
     _auth = betterAuth({
-        database: prismaAdapter(prisma, {
-            provider: "postgresql",
-        }),
+        database: prismaAdapter(prisma, { provider: "postgresql" }),
         plugins: [bearer(), admin()],
         user: {
             additionalFields: {
-                role: {
-                    type: "string",
-                    required: true,
-                    defaultValue: "STAFF",
-                },
-                tenantId: {
-                    type: "string",
-                    required: true,
-                },
+                role:     { type: "string", required: true, defaultValue: "STAFF" },
+                tenantId: { type: "string", required: true },
             },
         },
     });

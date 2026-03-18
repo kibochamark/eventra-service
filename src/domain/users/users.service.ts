@@ -56,7 +56,7 @@ export class UsersService {
     },
   ) {
     try {
-      const result = await (getAuth().api as any).createUser({
+      const result = await ((await getAuth()).api as any).createUser({
         body: {
           name: data.name,
           email: data.email,
@@ -133,7 +133,7 @@ export class UsersService {
       const user = await this.userRepo.findById(userId, tenantId);
       if (!user) return new NotFoundException(`User "${userId}" not found`);
 
-      await (getAuth().api as any).setUserPassword({
+      await ((await getAuth()).api as any).setUserPassword({
         body: { userId, newPassword },
         headers: fromNodeHeaders(requestHeaders as any),
       });

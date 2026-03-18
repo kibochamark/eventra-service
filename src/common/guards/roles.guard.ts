@@ -29,7 +29,7 @@ export class RolesGuard implements CanActivate {
 
     console.log(fromNodeHeaders(request.headers), "grg")
 
-    const session = await getAuth().api.getSession({
+    const session = await (await getAuth()).api.getSession({
       headers: fromNodeHeaders(request.headers),
     });
 
