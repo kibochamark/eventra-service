@@ -5,8 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Role } from 'generated/prisma/client';
-import { fromNodeHeaders } from 'src/common/utils/from-node-headers';
-import { getAuth } from 'src/auth';
+import { fromNodeHeaders } from '../../common/utils/from-node-headers';
+import { getAuth } from '../../auth';
 import { UserRepository } from './users.repository';
 
 @Injectable()

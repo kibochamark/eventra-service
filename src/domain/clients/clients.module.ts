@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ClientController } from 'src/controllers/client.controller';
-import { RolesGuard } from 'src/common/guards/roles.guard';
+import { ClientController } from '../../controllers/client.controller';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { ClientsRepository } from './clients.repository';
 import { ClientsService } from './clients.service';
 

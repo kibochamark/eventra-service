@@ -17,9 +17,9 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Role } from 'generated/prisma/client';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { RolesGuard } from 'src/common/guards/roles.guard';
-import { QuotesService } from 'src/domain/quotes/quotes.service';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { QuotesService } from '../domain/quotes/quotes.service';
 import {
   AddQuoteItemDto,
   CreateQuoteDto,

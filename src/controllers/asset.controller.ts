@@ -16,9 +16,9 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Role } from 'generated/prisma/client';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { RolesGuard } from 'src/common/guards/roles.guard';
-import { AssetsService } from 'src/domain/assets/assets.service';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { AssetsService } from '../domain/assets/assets.service';
 import {
   AssetIdParamDto,
   CategoryIdParamDto,

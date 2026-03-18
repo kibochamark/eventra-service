@@ -10,7 +10,7 @@ import {
   Min,
 } from 'class-validator';
 import { ItemType } from 'generated/prisma/client';
-import { IsNotPastDate } from 'src/common/validators/is-not-past-date.validator';
+import { IsNotPastDate } from '../../common/validators/is-not-past-date.validator';
 
 export class CreateQuoteDto {
   @IsString()

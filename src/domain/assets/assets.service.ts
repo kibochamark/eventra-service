@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { MovementType } from 'generated/prisma/client';
-import { S3Service } from 'src/domain/GlobalServices/s3/s3.service';
+import { S3Service } from '../GlobalServices/s3/s3.service';
 import { AssetsRepository } from './assets.repository';
 
 @Injectable()

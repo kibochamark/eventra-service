@@ -13,9 +13,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Role } from 'generated/prisma/client';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { RolesGuard } from 'src/common/guards/roles.guard';
-import { ClientsService } from 'src/domain/clients/clients.service';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { ClientsService } from '../domain/clients/clients.service';
 import {
   ClientIdParamDto,
   CreateClientDto,

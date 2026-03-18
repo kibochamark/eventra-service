@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ItemType, QuoteStatus, Role } from 'generated/prisma/client';
 import { Prisma } from 'generated/prisma/client';
-import { S3Service } from 'src/domain/GlobalServices/s3/s3.service';
+import { S3Service } from '../GlobalServices/s3/s3.service';
 import { QuotesRepository } from './quotes.repository';
 
 // -------------------------------------------------------

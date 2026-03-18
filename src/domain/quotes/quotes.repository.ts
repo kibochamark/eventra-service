@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ItemType, MovementType, QuoteStatus } from 'generated/prisma/client';
 import { Prisma } from 'generated/prisma/client';
-import { PrismaService } from 'src/prisma.service';
+import { PrismaService } from '../../prisma.service';
 
 @Injectable()
 export class QuotesRepository {
