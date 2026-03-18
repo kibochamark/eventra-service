@@ -18,6 +18,8 @@ export async function getAuth() {
 
     _auth = betterAuth({
         database: prismaAdapter(prisma, { provider: "postgresql" }),
+        baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:4000",
+        trustedOrigins: process.env.ALLOWED_ORIGINS?.split(',') ?? [],
         plugins: [bearer(), admin()],
         user: {
             additionalFields: {
