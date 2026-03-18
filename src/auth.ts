@@ -9,9 +9,9 @@ export async function getAuth() {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) throw new Error("DATABASE_URL is required");
 
-    const { betterAuth }    = await import("better-auth");
-    const { prismaAdapter } = await import("better-auth/adapters/prisma");
-    const { bearer, admin } = await import("better-auth/plugins");
+    const { betterAuth }    = await (new Function('return import("better-auth")')() as Promise<typeof import("better-auth")>);
+    const { prismaAdapter } = await (new Function('return import("better-auth/adapters/prisma")')() as Promise<typeof import("better-auth/adapters/prisma")>);
+    const { bearer, admin } = await (new Function('return import("better-auth/plugins")')() as Promise<typeof import("better-auth/plugins")>);
 
     const adapter = new PrismaNeon({ connectionString });
     const prisma  = new PrismaClient({ adapter });
