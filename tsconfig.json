@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "paths": { "src/*": ["./src/*"] },
     "module": "CommonJS",
     "declaration": true,
     "removeComments": true,
