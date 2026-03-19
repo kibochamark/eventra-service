@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
     "paths": { "src/*": ["./src/*"] },
-    "module": "CommonJS",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
