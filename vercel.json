@@ -4,8 +4,10 @@
     {
       "src": "dist/src/main.js",
       "use": "@vercel/static-build",
+      
       "config": {
-        "distDir": "dist"
+        "distDir": "dist",
+        "buildCommand": "pnpm run build"
       }
     }
   ],
