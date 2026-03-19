@@ -3,7 +3,7 @@
   "builds": [
     {
       "src": "dist/src/main.js",
-      "use": "@vercel/static-build",
+      "use": "@vercel/node",
       
       "config": {
         "distDir": "dist",
