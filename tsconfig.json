@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
-    "paths": { "src/*": ["./src/*"] },
-    "module": "esnext",
-    "moduleResolution": "bundler",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,

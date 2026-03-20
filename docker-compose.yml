@@ -1,0 +1,63 @@
+# Docker Compose file for local development
+version: '3.8'
+
+services:
+  # ==============================================
+  # PostgreSQL Database Service
+  # ==============================================
+  # ==============================================
+  # DB Migration Service (runs prisma db push then exits)
+  # ==============================================
+  # db-migrate:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #     target: production
+  #   command: npx prisma db push --config prisma.config.ts
+  #   environment:
+  #     - DATABASE_URL=${DATABASE_URL}
+  #   depends_on:
+  #     app:
+  #       condition: service_completed_successfully
+  #   networks:
+  #     - eventra-network
+  #   restart: "no"
+
+  # ==============================================
+  # NestJS Application Service
+  # ==============================================
+  app:
+    build:
+      context: .
+      dockerfile: dockerfile
+      target: production
+    container_name: eventra-service
+    restart: unless-stopped
+    ports:
+      - "4001:4000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL}
+    env_file:
+      - .env
+    networks:
+      - eventra-network
+    # Remove or comment out this volume for production mode:
+    # volumes:
+    #   - ./src:/usr/src/app/src  # Use this for development mode only
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+
+networks:
+  eventra-network:
+    driver: bridge
+
+
+
+
+  

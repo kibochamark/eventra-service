@@ -1,0 +1,32 @@
+name: Deploy to Hostinger VPS
+# THE TRIGGER: When do we deploy?
+on:
+  push:
+    branches: [main]  # Only when pushing to main
+
+# THE JOB: What do we do?
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # GitHub's free temporary machine
+
+    steps:
+      # Step 1: SSH into VPS and deploy
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            cd /opt/apps/eventra-service
+            
+            echo "==> Pulling latest code..."
+            git pull origin main
+            
+            echo "==> Building and restarting containers..."
+            docker compose up -d --build
+            
+            echo "==> Cleaning up old images..."
+            docker image prune -f
+            
+            echo "==> Done! Deployment complete."
